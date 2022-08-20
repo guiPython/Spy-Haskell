@@ -14,3 +14,8 @@ canDriveCar :: SpecifiedSpy specifications -> Maybe(SpecifiedSpy (Drive Car ': s
 canDriveCar (SpecifiedSpy spy) =
     if age spy >= 18 then Just $ SpecifiedSpy spy
     else Nothing
+
+canPilotHelicopter :: SpecifiedSpy specifications -> Maybe(SpecifiedSpy (Drive Helicopter ': specifications))
+canPilotHelicopter (SpecifiedSpy spy) = 
+    if age spy >= 18 then Just $ SpecifiedSpy spy
+    else Nothing

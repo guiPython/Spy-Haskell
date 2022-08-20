@@ -1,5 +1,3 @@
-{-# LANGUAGE PolyKinds #-}
-{-# LANGUAGE DataKinds #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE GADTs #-}
