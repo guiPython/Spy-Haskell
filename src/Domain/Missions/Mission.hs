@@ -2,7 +2,8 @@
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE PolyKinds #-}
 {-# LANGUAGE StandaloneKindSignatures #-}
-module Domain.Missions.Mission (mkAquaticMission, mkAeroMission, mkAeroAquaticMission, mkInvalidMission, transition, execute, complete, Mission(..), MissionInfo(..), State(..)) where
+{-# OPTIONS_GHC -Wno-incomplete-patterns #-}
+module Domain.Missions.Mission (mkAquaticMission, mkAeroMission, mkAeroAquaticMission, mkInvalidMission, transition, execute, complete, value, updateValue, Mission(..), MissionInfo(..), State(..)) where
 
 import Data.Kind (Type)
 import Common.Operators (Satisfied, Expression(Spec), And)
@@ -15,25 +16,25 @@ newtype Transition actual final = Transition (State -> State)
 
 type MissionInfo :: Type -> Type -> Type
 data MissionInfo spy value where
-  AquaticInfo :: (Satisfied (Spec (Do AquaticMission)) specs, Floating value) => {
+  AquaticInfo :: (Satisfied (Spec (Do AquaticMission)) specs) => {
     _spy :: SpecifiedSpy specs,
-    _value :: value
+    _value :: Double
   } -> MissionInfo spy value
 
-  AeroInfo :: (Satisfied (Spec (Do AeroMission)) specs, Floating value) => {
+  AeroInfo :: (Satisfied (Spec (Do AeroMission)) specs, Num value) => {
     _spy :: SpecifiedSpy specs,
-    _value :: value
+    _value :: Double
   } -> MissionInfo spy value
 
-  AeroAquaticInfo :: (Satisfied (And (Spec (Do AeroMission)) (Spec (Do AquaticMission))) specs, Floating value) => {
+  AeroAquaticInfo :: (Satisfied (And (Spec (Do AeroMission)) (Spec (Do AquaticMission))) specs) => {
     _spy :: SpecifiedSpy specs,
-    _value :: value
+    _value :: Double
   } -> MissionInfo spy value
 
   MkInvalidMission :: MissionInfo spy value
 
 
-type Mission :: Type -> Type -> Type
+type Mission :: Type -> State -> Type
 data Mission info state where
   MkMission :: MissionInfo spy value -> State -> Mission info state
 
@@ -43,17 +44,28 @@ instance Show (Mission info state) where
   show (MkMission (AeroInfo (SpecifiedSpy spy) value) state) = "Aero Mission for " ++ name spy ++ " " ++ show state
   show (MkMission (AeroAquaticInfo (SpecifiedSpy spy) value) state) = "Aero-Aquatic Mission for " ++ name spy ++ " " ++ show state
 
-mkInvalidMission :: Mission (MissionInfo Spy value) State
-mkInvalidMission = MkMission MkInvalidMission Invalided
+mkInvalidMission :: Mission (MissionInfo Spy value) Pending
+mkInvalidMission = MkMission MkInvalidMission Pending
 
-mkAquaticMission :: (Satisfied (Spec (Do AquaticMission)) specs, Floating value) => SpecifiedSpy specs -> value -> Mission(MissionInfo Spy value) State
+mkAquaticMission :: (Satisfied (Spec (Do AquaticMission)) specs) => SpecifiedSpy specs -> Double -> Mission(MissionInfo Spy Double) Pending
 mkAquaticMission specified value = MkMission (AquaticInfo specified value) Pending
 
-mkAeroMission :: (Satisfied (Spec (Do AeroMission)) specs, Floating value) => SpecifiedSpy specs -> value -> Mission(MissionInfo Spy value) State
+mkAeroMission :: (Satisfied (Spec (Do AeroMission)) specs) => SpecifiedSpy specs -> Double -> Mission(MissionInfo Spy Double) Pending
 mkAeroMission specified value = MkMission (AeroInfo specified value) Pending
 
-mkAeroAquaticMission :: (Satisfied (And (Spec (Do AeroMission)) (Spec (Do AquaticMission))) specs, Floating value) => SpecifiedSpy specs -> value -> Mission(MissionInfo Spy value) State
+mkAeroAquaticMission :: (Satisfied (And (Spec (Do AeroMission)) (Spec (Do AquaticMission))) specs) => SpecifiedSpy specs -> Double -> Mission(MissionInfo Spy Double) Pending
 mkAeroAquaticMission specified value = MkMission (AeroAquaticInfo specified value) Pending
+
+value :: Mission (MissionInfo Spy Double) state -> Double
+value (MkMission (AeroInfo _ v) _) = v
+value (MkMission (AquaticInfo _ v) _) = v
+value (MkMission (AeroAquaticInfo spy v) _) = v 
+value (MkMission MkInvalidMission _) = 0 
+
+updateValue :: Mission (MissionInfo Spy Double) Pending -> Double -> Mission (MissionInfo Spy Double) Pending
+updateValue (MkMission (AeroInfo spy _) _) value = mkAeroMission spy value
+updateValue (MkMission (AquaticInfo spy _) _) value = mkAquaticMission spy value
+updateValue (MkMission (AeroAquaticInfo spy _) _) value = mkAeroAquaticMission spy value
 
 transition :: Transition actual final -> Mission mission actual -> Mission mission final
 transition (Transition func) (MkMission mission state) = MkMission mission (func state)

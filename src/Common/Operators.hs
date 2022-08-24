@@ -16,7 +16,7 @@ import Data.Type.Bool (type (&&), type (||), Not, If)
 import Data.Bool (Bool(True, False))
 import Data.Kind (Constraint, Type)
 import Data.Data (Proxy (Proxy))
-import Data.Type.Equality ( type (==) )
+import Data.Type.Equality (type (==))
 
 eval :: Maybe  a -> Bool
 eval (Just _) = True
@@ -42,11 +42,11 @@ type family Same xs ys where
   Same (x ': xs) (y ': ys) = If (x == y) (True && Same xs ys) False
 
 type (#<>) :: [a] -> [a] -> [a]
-type family xs #<> ys where
-    '[] #<> '[] = '[]
-    xs  #<> '[] =  xs
-    '[] #<>  ys =  ys
-    (x ': xs) #<> ys =  xs #<> (x ': ys)
+type family (#<>) xs ys where
+    (#<>) '[] '[] = '[]
+    (#<>) xs '[] =  xs
+    (#<>) '[] ys =  ys
+    (#<>) (x ': xs) ys = xs #<> (x ': ys)
 
 data Expression a =
     ETrue | EFalse |
