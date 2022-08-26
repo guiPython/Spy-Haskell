@@ -13,7 +13,7 @@ module Domain.Spies.Specifications (
     withSpy) where
 import Data.Kind ( Type, Constraint )
 import Domain.Spies.Spy ( Spy, age )
-import Common.Operators (Satisfied, And, Or, Expression(Spec))
+import Common.Operators (Satisfied, And, Or, Expression(Spec), NoT)
 
 data CanDrive    = Car | Boat | Helicopter   deriving Show
 data CanDo       = AquaticMission | AeroMission deriving Show
@@ -52,7 +52,7 @@ canDoAquaticMission (SpecifiedSpy spy) =
     if age spy >= 35 then Just $ SpecifiedSpy spy
     else Nothing
 
-canDoAeroMission :: Satisfied (Or (Spec (Drive Helicopter)) (Spec (Drive Car))) specs => SpecifiedSpy  specs -- ^ 
+canDoAeroMission :: Satisfied (Or (Spec (Drive Helicopter)) (NoT (Spec (Drive Car)))) specs => SpecifiedSpy  specs -- ^ 
   -> Maybe(SpecifiedSpy (Do AeroMission ': specs))
 canDoAeroMission (SpecifiedSpy spy) = 
     if age spy >= 35 then Just $ SpecifiedSpy spy
