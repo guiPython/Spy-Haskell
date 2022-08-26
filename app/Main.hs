@@ -7,11 +7,13 @@
 module Main where
 
 import Common.Operators (eval, type (#<>), Expression (Spec), Satisfied, Elem)
-import Domain.Spies.Specifications.CanDo (canDoAquaticMission)
-import Domain.Spies.Specifications.CanPilot (canDriveCar, canPilotBoat)
-import Domain.Spies.Specifications.SpySpecification (SpecifiedSpy (SpecifiedSpy), specifiedSpies, specifiedSpy, CanDo (AquaticMission), CanDrive(..), Specs(Drive, Do))
+import Domain.Spies.Specifications (
+    SpecifiedSpy, specifiedSpies, specifiedSpy,
+    CanDo (AquaticMission), CanDrive(..), Specs(Drive, Do),
+    canDriveCar, canPilotBoat,
+    canDoAeroMission, canDoAquaticMission)
 import Domain.Spies.Spy (Spy (..))
-import Domain.Missions.Mission (mkAquaticMission, mkInvalidMission, execute, complete, transition, Mission, State(..), MissionInfo)
+import Domain.Missions.Mission (mkAquaticMission, mkInvalidMission, mkAeroMission, execute, complete, transition, Mission, State(..), MissionInfo)
 import Domain.Missions.Specifications (isAquatic, specifiedMission, isAero, isPending, SpecifiedMission(..), Specs(..))
 import Data.Maybe (mapMaybe)
 import qualified Control.Monad
@@ -45,9 +47,9 @@ spiesWithAuthForPilotBoatAndDriveCar = mapMaybe ((canDriveCar Control.Monad.>=> 
 --}
 
 -- Agora o jeito correto
-aquaticMission :: SpecifiedSpy [ 'Drive 'Boat, 'Drive 'Car] -> Mission (MissionInfo Spy Double) 'Pending
-aquaticMission spy = case canDoAquaticMission spy of
-    Just specified ->  mkAquaticMission specified 15.50
+aquaticMission :: SpecifiedSpy [ 'Drive 'Boat, 'Drive 'Car] -> Double -> Mission (MissionInfo Spy Double) 'Pending
+aquaticMission spy value = case canDoAquaticMission spy of
+    Just specified ->  mkAquaticMission specified value
     Nothing -> mkInvalidMission
 
 -- Montanto uma lista de Aquatic mission e tendo certeza que todos os itens sao de missoes aquaticas e com status pendente
@@ -59,9 +61,40 @@ aquaticMissions = mapMaybe ((isPending Control.Monad.>=> isAquatic) . specifiedM
 {-- 
     Agora temos a regra de negocio que diz se um espiao pode fazer uma missao aerea, basicamente nossa regra diz:
     Ou ele pilota um helicoptero ou ele nao dirige um carro
-    portanto seriam specs validas todas as lista que contem a especificacao de pilotar helicoptero e outro conjunto de specs que 
-    nao contem permissao de dirigir um Carro 
+    portanto seriam specs validas todas as listas que contem a especificacao de pilotar helicoptero e as listas que não 
+    contem a spec de dirigir o carro.
 --}
 
+aeroMissionForSpyWhoCanPilotHelicopter :: SpecifiedSpy '[Drive Helicopter] -> Double -> Mission (MissionInfo Spy Double) 'Pending
+aeroMissionForSpyWhoCanPilotHelicopter spy value = case canDoAeroMission spy of
+    Just specified ->  mkAeroMission specified value
+    Nothing -> mkInvalidMission
+
+{--
+    Abaixo temos o comportamento ruim do nosso operador Not, basta que nossa lista não contenha (Drive Car) mas para não conter
+    basta não testar o espião com a função canDriveCar, deveriamos nos preocupar em gerar specs negando permissoes e forçar que
+    na lista de spes tenha algo do tipo (NotDrive Car) assim teriamos o comportamento esperado.
+--}
+
+aeroMissionForSpyWhoCanPilotBoat :: SpecifiedSpy '[Drive Boat] -> Double -> Mission (MissionInfo Spy Double) 'Pending
+aeroMissionForSpyWhoCanPilotBoat spy value = case canDoAeroMission spy of
+    Just specified ->  mkAeroMission specified value
+    Nothing -> mkInvalidMission
+
+{--
+    Exemplo de um código que não compila pois temos a spec Drive Car na lista de specs
+
+    aeroMissionForSpyWhoCanPilotCar :: SpecifiedSpy '[Drive Car] -> Double -> Mission (MissionInfo Spy Double) 'Pending
+    aeroMissionForSpyWhoCanPilotCar spy value = case canDoAeroMission spy of
+        Just specified ->  mkAeroMission specified value
+        Nothing -> mkInvalidMission
+--}
+
+
+aquaticMissionsToString :: [String]
+aquaticMissionsToString = map
+    ((\aquaticMission -> show aquaticMission ++ "\n") . (`aquaticMission` 1200)) 
+    (spiesWithAuthForPilotBoatAndDriveCar spies)
+
 main :: IO ()
-main = print $ show (head $ spiesWithAuthForPilotBoatAndDriveCar spies)
+main = putStr $ unlines aquaticMissionsToString
