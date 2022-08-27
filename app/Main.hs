@@ -91,6 +91,19 @@ aeroMissionForSpyWhoCanPilotBoat spy value = case canDoAeroMission spy of
 --}
 
 
+{--
+    Abaixo temos um código que percorre a lista de espiões 
+    filtrando somente aqueles que tem permissão para pilotar um barco
+    e dirigir um carro, essa lista de espiões esta na linha 23,
+    como as permissões são dadas baseadas na idade, você pode
+    alterar as idades dos espiões e ver o comportamento do 
+    código abaixo ser alterado, além desse filtro ele constrói 
+    uma aquatic mission com a função da linha 51 e depois 
+    cria a string relacionada aquela missão.
+
+    *Importante: A função da linha 51 cria uma InvalidMission ou uma AquaticMission
+    dependendo se o espião segue ou não as especificações necessárias.
+--}
 aquaticMissionsToString :: [String]
 aquaticMissionsToString = map
     ((\aquaticMission -> show aquaticMission ++ "\n") . (`aquaticMission` 1200)) 
