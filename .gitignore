@@ -23,4 +23,3 @@ cabal.project.local~
 .ghc.environment.*
 spy.cabal
 stack.yaml.lock
-ChangeLog.md
